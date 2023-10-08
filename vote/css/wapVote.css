@@ -1,0 +1,235 @@
+@charset "utf-8";
+/* 移动端适配*/
+/*
+*author:wly
+*date:2018-8-23
+*目前是研招移动端样式
+*/
+/****css reset for all***/
+body{background: #fff}
+video,img{max-width: 100%}
+.yz_bg{
+    min-width:0;
+    min-height:0;
+    background: #fff;
+}
+.yz_top{min-width:0;}
+.width1000,.survey_main{width: 100%}
+.add_v{border:0;margin-top:10px;}
+.yz_title{
+    background:#fff;
+    padding:10px;
+    border-radius:0;
+    color:#333; 
+    border-bottom:0;
+}
+.yz_title h2{font-size: 18px;font-weight: 400;text-align: center;line-height: 1.5;padding: 5px 0;}
+.yz_title p{padding-top:0;text-indent: 2em;}
+.add_v {
+    width: auto;
+    min-width: inherit;
+    min-height: 400px;
+    margin-top:0;
+    box-shadow: none;
+}
+.errorP{margin:5px 10px}
+/*.litle_tit{display: none}
+.wap_tit{display: block;}
+.wap_tit{    
+    width: 100%;
+    height: 44px;
+    line-height: 44px;
+    text-align: center;
+    font-size: 18px;
+}
+.wap_tit .treturn {
+    font-size: 17px;
+    color: #333;
+    left: 0;
+    position: absolute;
+    z-index: 1;
+    min-width: 60px;
+    text-align: left;
+    text-decoration: none;
+    padding-left: 14px;
+}
+.wap_tit .treturn:before {
+    content: "";
+    display: inline-block;
+    background: url(../images/vote/jiantou.png) no-repeat;
+    background-size: 100%;
+    width: 10px;
+    height: 20px;
+    vertical-align: sub;
+    margin-right: 6px;
+}
+.wap_tit .sitename{
+    display: inline-block;
+    max-width: 80%;
+    height: 43px;
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}*/
+.survey_container{padding-top:0 }
+.part{
+    display: block;
+    border: 0;
+    padding: 0 15px;
+    margin-top: 0;
+    height: 40px;
+    line-height: 40px;
+    color: #0f9eec;
+}
+.width50 ,.width33,.width25,.width20{width: 100%}
+/*.survey_container .question {
+    padding-bottom: 8px;
+}
+.survey_wrap .survery_title .inner{
+    margin-left: 15px;
+    margin-right: 15px;
+}
+.survey_wrap .inner{
+    margin: 0;
+    max-width: none;
+}*/
+.inputs {
+    padding: 3px 35px;
+}
+.question .op_item{
+    padding: 10px 4px;
+    border-bottom: 1px solid #e6e6e6;
+}
+.question .q_title {
+    margin: 0 15px;
+    border-bottom: 1px solid #0f9eec;
+    background:url(../images/vote/tit_bg.png) left bottom no-repeat; 
+}
+.question .q_title.no_border{
+    border-bottom:none;
+    background:none; 
+}
+.question[data-type = '3'] .inputs {
+    padding: 3px 15px;
+}
+.question[data-type = '3'] .inputs .survey_form_input{
+    width: 100%
+}
+.bottom_sub{padding: 0 15px 45px}
+.bottom_sub input{-webkit-appearance:none;width: 100% !important;}
+.footer{color:#666;padding: 10px 15px;}
+.q_title{display: block;}
+.d1{margin: 0 15px;display: block;}
+.d1  .survey_form_input{margin:10px 0;}
+.d2 .survey_form_input{width: 100%;margin:10px 0; }
+.d3 .survey_form_input{margin-bottom: 5px; }
+.survey_btn{display: block;
+margin: 10px 0;}
+/*调查成功*/
+.vote_wrap,.vote_wrap .header_logo,.vote_wrap .cb{
+    width: 94%;
+    padding:0 3%;
+}
+.header_logo{
+    background-size:100%; 
+}
+.vote_wrap .cb .t1,.vote_wrap .cb .t2,.vote_wrap .cb .t3{background: #fff;}
+.vote_wrap .cb .t2{line-height:2;font-size: 26px;padding:0;}
+.vote_wrap  .scan-result{margin:0 auto;}
+.vote_wrap .first-td{
+  width: 60%;
+}
+.vote_wrap .second-td{
+  width: 20%;
+}
+.vote_wrap .third-td{
+   width: 20%;
+}
+.rate-img{display:none;}
+.vote_wrap .width15{width:100%;}
+.vote_wrap .bg1{
+  background: #96bcd3;
+}
+.vote_wrap .bg2{
+  background: #fff;
+}
+.vote_wrap .table-b{
+  border-top:none;
+  border-right:none;
+}
+.vote_wrap .table-b td{
+  border-left:none;
+  border-bottom:1px solid #96bcd3;
+}
+.vote_wrap .table-b-no td{
+  border:none;
+}
+.second-td,.third-td{text-align: right}
+/*投票结束后的成功失败页面样式*/
+.vote-result{
+    width: 90%;
+    margin:0 auto;
+    padding-bottom:30px;
+}
+.vote-result .xz-div {
+    width:100%;
+}
+.vote-result h3{
+    font-size: 18px;
+}
+.vote-result .xz-border h4 {
+    margin-left: -50px;
+    width: 100px;
+    font-size: 18px;
+}
+.xz-div ul li img{width: 46px;}
+.xz-div ul li p{font-size: 12px;}
+.vote-result .xz-border {
+    padding: 20px;
+}
+.xz-div ul {
+    width: 100%;
+    height: 120px;
+    margin: 0 auto 0;
+}
+.xz-div .total {
+    width:100%;
+    font-size: 12px;
+}
+.xz-div .show-num span {
+    font-size: 18px;
+}
+.xz-div .show-num {
+    width:150px;
+    margin-left: -75px;
+}
+/*
+*author:wly
+*date:2018-11-16;
+*普通模板下的移动端适配
+*/
+/****css reset for all***/
+#bd {
+    min-width: 0;
+    padding-bottom:0;
+}
+#add_v{
+    margin-top:0;
+    border:none;
+}
+.prefix_content p{padding:0 10px;}
+.chsi_top{
+    padding: 0 10px;
+    height: auto;
+}
+.chsi_top h1{
+    float: none;
+    width: 100%;
+    margin-top: 15px;
+    display: block;
+    background-size: 100%;
+}
+.chsi_main .question .q_title{
+    border-bottom:1px solid #2fafbc;
+    background-image: url('../images/vote/chsi_tit_bg.png');
+}   

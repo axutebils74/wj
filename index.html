@@ -1,0 +1,11 @@
+<script>
+function go(){
+    location.href = navigator.userAgent.indexOf("Mobile")==-1 ? "pc.html" : "wap.html";
+}
+if(typeof sessionStorage =="object") {
+    if(sessionStorage['yz_permiss']) go();
+    else location.href = "load/loader.html"
+}else{
+    go();
+}
+</script>

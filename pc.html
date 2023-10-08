@@ -1,0 +1,628 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge;chrome=1">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <link rel="shortcut icon" href="vote/assets/favicon.ico" type="image/x-icon">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no,viewport-fit=cover">
+    <link href='vote/assets/pc/css/chsiApp.css?v=2023' rel="stylesheet" type="text/css">
+    <title>2024年硕士网报期间调查-统考生</title>
+</head>
+<body>
+    <div id="app" class="vote-page" v-cloak="">
+        <div class="reine">
+<div class="form-edit-fields">
+    <div class="preview-bg">
+        <div class="editable-form-header">
+            <div class="form-header-wrap">
+                <h3>{{formObj.name}}<template v-if="formObj.limitCnt>=0">（剩余{{formObj.votableCnt}}个名额）</template></h3>
+                <div v-if="formObj.description" class="des-part">{{formObj.description}}</div>
+            </div>
+        </div>
+        <div class="preview-body">
+            <template v-for="(qItem,qIndex) in formObj.fields">
+                <div class="qes-wrapper " :id="'qWrapper'+qIndex" :key="qItem.id">
+                    <div class="qes-tit" :class="{'qes-required':_.indexOf(formObj.fields[qIndex].validations,'presence')>-1}">
+                        <template v-if="formObj.showFieldNumber=='1'">{{qIndex+1}}、</template>{{qItem.label}}<template v-if="qItem.notes!=''">({{qItem.notes}})</template>
+                    </div>
+                    <div class="qes-tit-des">{{qItem.labelDes }}</div>
+                    <div class="color-red">{{errors.first('qeslist'+qIndex)}}</div>
+                    <template v-if="qItem.type=='Radio'">
+                        <!-- 单选 -->
+                        <radio-group :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1}" class="clearfix" v-model="qItem.selected">
+                            <div class="line-wrap" :style="'width: '+1/qItem.columnNums*100+'%;'" v-for="(optItem,optIndex) in qItem.choices" :key="optItem.id">
+                                <radio v-if="typeof(optItem.limitCnt)=='null' || typeof(optItem.limitCnt)=='string'" :label="optItem.id">
+                                    <span>{{optItem.name}}</span>
+                                </radio>
+                                <radio v-else="" :label="optItem.id" :disabled="typeof(optItem.votableCnt) == 'number' && optItem.votableCnt==0">
+                                    <span>{{optItem.name}}</span><span class="color8D" v-if="typeof(optItem.votableCnt) == 'number' && optItem.votableCnt>=0">（{{'剩余'+optItem.votableCnt+'个名额'}}）</span>
+                                </radio>
+                                <div class="des-tip" v-if="optItem.descriptionText!=''">
+                                    {{optItem.descriptionText}}
+                                </div>
+                                <i-input v-if="optItem.allowExtendedText && qItem.selected==optItem.id" class="extended-text" v-model="optItem.content" :placeholder="optItem.extendedTextPlaceholder"></i-input>
+                            </div>
+                        </radio-group>
+                    </template>
+                    <template v-if="qItem.type=='CheckBox'">
+                        <!-- 多选 -->
+                        <checkbox-group :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,checkBoxSize:qIndex}" class="clearfix" v-model="qItem.selected">
+                            <div class="line-wrap" :style="'width: '+1/qItem.columnNums*100+'%;'" v-for="(optItem,optIndex) in qItem.choices" :key="optItem.id">
+                                <checkbox :label="optItem.id">
+                                    <span>{{optItem.name}}</span>
+                                </checkbox>
+                                <div class="des-tip" v-if="optItem.descriptionText!=''">
+                                    {{optItem.descriptionText}}
+                                </div>
+                                <i-input v-if="optItem.allowExtendedText && _.indexOf(qItem.selected,optItem.id)>-1" class="extended-text" v-model="optItem.content" :placeholder="optItem.extendedTextPlaceholder"></i-input>
+                            </div>
+                        </checkbox-group>
+                    </template>
+                    <template v-if="qItem.type=='DropDown'">
+                        <!-- 下拉框 -->
+                        <div class="padTB10">
+                            <i-select style="width:200px" v-model="qItem.selected" :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1}">
+                                <i-option v-for="(optItem,optIndex) in qItem.choices" :value="optItem.id">{{optItem.name}}
+                                </i-option>
+                            </i-select>
+                        </div>
+                    </template>
+                    <template v-if="qItem.type=='DateTimeField'">
+                        <!-- 日期 -->
+                        <div class="padTB10">
+                            <template v-if="qItem.precision=='month'">
+                                <date-picker :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,maxMinSize:qIndex}" type="month" placeholder="年-月" v-model="qItem.selected" :options="qItem.limitDate"></date-picker>
+                            </template>
+                            <template v-if="qItem.precision=='date'">
+                                <date-picker :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,maxMinSize:qIndex}" type="date" placeholder="年-月-日" v-model="qItem.selected" :options="qItem.limitDate"></date-picker>
+                            </template>
+                            <template v-if="qItem.precision=='datetime'">
+                                <date-picker :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,maxMinSize:qIndex}" type="datetime" placeholder="年-月-日 时:分:秒" v-model="qItem.selected" :options="qItem.limitDate"></date-picker>
+                            </template>
+                        </div>
+                    </template>
+                    <template v-if="qItem.type=='TextField'">
+                        <!-- 单行文本 -->
+                        <i-input :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,max:qItem.maximumLength,min:qItem.minimumLength}" class="padTB10" maxlength="200" :placeholder="qItem.placeholder" v-model="qItem.selected"></i-input>
+                    </template>
+                    <template v-if="qItem.type=='TextArea'">
+                        <!-- 多行文本 -->
+                        <i-input :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,max:qItem.maximumLength,min:qItem.minimumLength}" class="padTB10" maxlength="200" :placeholder="qItem.placeholder" v-model="qItem.selected" type="textarea" rows="4"></i-input>
+                    </template>
+                    <template v-if="qItem.type=='LikertField' || qItem.type=='MultiLikertField'">
+                        <!-- 矩阵题目 -->
+                        <div class="vote-table-wrapper padTB10">
+                            <div class="vote-table" :class="{scrollTable:qItem.totalWidth>838}" v-if="!!qItem.lineWidth">
+                                <div class="vote-table-header" :style="'min-width:'+qItem.totalWidth+'px;'">
+                                    <div class="vote-tr">
+                                        <div class="vote-th vote-th-fixed" :style="'left:0;flex:'+qItem.lineWidth[0]+' 0 auto;width:'+qItem.lineWidth[0]+'px;'">
+                                            <div class=""></div>
+                                        </div>
+                                        <template v-for="(choice,cIndex) in qItem.choices">
+                                            <div class="vote-th" :style="'flex:'+qItem.lineWidth[cIndex+1]+'0 auto;width:'+qItem.lineWidth[cIndex+1]+'px;'">
+                                                <div>{{choice.name}}</div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="vote-tbody" :style="'min-width:'+qItem.totalWidth+'px;'">
+                                    <template v-for="statement in qItem.statements">
+                                        <radio-group class="vote-tr" :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,LikertFieldSize:qIndex}" v-model="statement.selected" v-if="qItem.type=='LikertField'">
+                                            <div class="vote-td vote-td-fixed" :style="'left:0;flex:'+qItem.lineWidth[0]+' 0 auto; width: '+qItem.lineWidth[0]+'px;'">
+                                                {{statement.label}}
+                                            </div>
+                                            <template v-for="(choice,cIndex) in qItem.choices">
+                                                <div class="vote-td" :style="'flex: '+qItem.lineWidth[cIndex+1]+'0 auto; width:'+qItem.lineWidth[cIndex+1]+'px;'">
+                                                    <radio :label="choice.id">{{''}}</radio>
+                                                </div>
+                                            </template>
+                                        </radio-group>
+                                        <checkbox-group class="vote-tr" :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1,MultiLikertFieldSize:qIndex}" v-model="statement.selected" v-if="qItem.type=='MultiLikertField'">
+                                            <div class="vote-td vote-td-fixed" :style="'left:0;flex:'+qItem.lineWidth[0]+' 0 auto; width: '+qItem.lineWidth[0]+'px;'">
+                                                {{statement.label}}
+                                            </div>
+                                            <template v-for="(choice,cIndex) in qItem.choices">
+                                                <div class="vote-td" :style="'flex: '+qItem.lineWidth[cIndex+1]+'0 auto; width:'+qItem.lineWidth[cIndex+1]+'px;'">
+                                                    <checkbox :label="choice.id">{{''}}</checkbox>
+                                                </div>
+                                            </template>
+                                        </checkbox-group>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template v-if="qItem.type=='MatrixField'">
+                        <!-- 矩阵填空题目 -->
+                        <div class="vote-table-wrapper padTB10">
+                            <div class="vote-table" :class="{scrollTable:qItem.totalWidth>838}" v-if="!!qItem.lineWidth">
+                                <div class="vote-table-header" :style="'min-width:'+qItem.totalWidth+'px;'">
+                                    <div class="vote-tr">
+                                        <div class="vote-th vote-th-fixed" :style="'left:0;flex:'+qItem.lineWidth[0]+' 0 auto;width:'+qItem.lineWidth[0]+'px;'">
+                                            <div class=""></div>
+                                        </div>
+                                        <template v-for="(choice,k)  in qItem.choices">
+                                            <div class="vote-th" :style="'flex:'+qItem.lineWidth[k+1]+'0 auto;width:'+qItem.lineWidth[k+1]+'px;'">
+                                                <div>{{choice.name}}</div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="vote-tbody" :style="'min-width:'+qItem.totalWidth+'px;'">
+                                    <template v-for="(statement,j) in qItem.statements">
+                                        <div class="vote-tr" v-model="statement.selected">
+                                            <div class="vote-td vote-td-fixed" :style="'left:0;flex:'+qItem.lineWidth[0]+' 0 auto; width: '+qItem.lineWidth[0]+'px;'">
+                                                {{statement.label}}
+                                            </div>
+                                            <template v-for="(choice,k) in qItem.choices">
+                                                <div class="vote-td" :style="'flex:'+qItem.lineWidth[k+1]+'0 auto;width:'+qItem.lineWidth[k+1]+'px;'">
+                                                    <template v-if="type == 'preview'">
+                                                        <i-input :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1}" maxlength="200"></i-input>
+                                                    </template>
+                                                    <template v-else="">
+                                                        <i-input v-model="statement.choices[k].content" :name="'qeslist'+qIndex" v-validate="{required:_.indexOf(formObj.fields[qIndex].validations,'presence')>-1}" maxlength="200"></i-input>    
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+            <div class="center">
+                <i-button v-if="type!='show'" class="vote-primary-btn" type="primary" :loading="saveLoading" @click='submitForm'>提交</i-button>
+            </div>
+        </div>
+    </div>
+</div>   
+
+
+
+<script layout:fragment="script" th:inline="javascript">
+    var mixin = {
+
+        computed: {},
+        mounted: function () {
+            var _this = this;
+            var tableFontSize = 14,//table的字号
+                tableTdPadding = 50,//table td左右padding距值和
+                tableMinWidth = 838;//table最小宽度
+            for (var i = 0; i < this.formObj.fields.length; i++) {
+                var curItem = this.formObj.fields[i];
+                if (curItem.type == "LikertField" || curItem.type == "MultiLikertField") {//矩阵单选、多选
+                    var line0Width = 0,//第一列字数
+                        lineWidth = [],//所有列宽度数组
+                        choicesTotal = 0,//各选项列宽度综合
+                        tableWidth = 0;//table最小宽度
+                    for (var j = 0; j < curItem.statements.length; j++) {
+                        var labelLen = curItem.statements[j].label.length;
+                        line0Width = labelLen > line0Width ? labelLen : line0Width;
+                        if (curItem.type == "MultiLikertField") {//矩阵多选,绑定的字段要由字符串改为数组；
+                            var mixSelected = curItem.statements[j].selected;
+                            curItem.statements[j].selected = mixSelected == '' ? [] : mixSelected.split(";");
+                        }
+                    }
+                    lineWidth[0] = line0Width * tableFontSize + tableTdPadding;
+                    lineWidth[0] = lineWidth[0] > 300 ? 300 : lineWidth[0];//第一列不应该太大以免选项都显示不出来了
+                    for (var k = 0; k < curItem.choices.length; k++) {
+                        lineWidth[k + 1] = curItem.choices[k].name.length * tableFontSize + tableTdPadding;
+                        lineWidth[k + 1] = lineWidth[k + 1] > 200 ? 200 : lineWidth[k + 1];//2-最后一列宽度别太大了，太大就固定成200，文字换行吧
+                        choicesTotal += lineWidth[k + 1];
+                    }
+                    tableWidth = (lineWidth[0] + choicesTotal) > tableMinWidth ? (lineWidth[0] + choicesTotal) : tableMinWidth;
+                    this.formObj.fields[i].totalWidth = tableWidth;
+                    this.formObj.fields[i].lineWidth = lineWidth;
+
+
+                } else if (curItem.type == "MatrixField") {//矩阵填空
+                    var line0Width = 0,//第一列宽度
+                        lineWidth = [],//所有列宽度数组
+                        choicesTotal = 0,//各选项列宽度综合
+                        tableWidth = 0;//table最小宽度
+                    for (var j = 0; j < curItem.statements.length; j++) {
+                        var labelLen = curItem.statements[j].label.length;
+                        line0Width = labelLen > line0Width ? labelLen : line0Width;
+                        for (var k = 0; k < curItem.choices.length; k++) {
+                            if (j == 0) {
+                                lineWidth[k + 1] = curItem.choices[k].name.length * tableFontSize + tableTdPadding;
+                                lineWidth[k + 1] = lineWidth[k + 1] < 186 ? 186 : lineWidth[k + 1];//不单根据选项字数，还有顾忌输入框别太小，故做此处理
+                                lineWidth[k + 1] = lineWidth[k + 1] > 200 ? 200 : lineWidth[k + 1];//2-最后一列宽度别太大了，太大就固定成200，文字换行吧
+                                choicesTotal += lineWidth[k + 1];
+                            }
+                        }
+                    }
+                    lineWidth[0] = line0Width * tableFontSize + tableTdPadding;
+                    lineWidth[0] = lineWidth[0] > 300 ? 300 : lineWidth[0];//第一列不应该太大以免选项都显示不出来了
+                    tableWidth = (lineWidth[0] + choicesTotal) > tableMinWidth ? (lineWidth[0] + choicesTotal) : tableMinWidth;
+                    this.formObj.fields[i].totalWidth = tableWidth;
+                    this.formObj.fields[i].lineWidth = lineWidth;
+                } else if (curItem.type == "DateTimeField") {//日期格式
+                    this.setDateOpt(i);
+                }
+                if (curItem.type == "CheckBox") {//多选,绑定的字段要由字符串改为数组；
+                    var mixSelected = this.formObj.fields[i].selected;
+                    this.formObj.fields[i].selected = mixSelected == '' ? [] : mixSelected.split(";");
+                }
+                if(curItem.type=="Radio"){//单选-选项限制初始化
+                    curItem = this.initLimitCnt(curItem);
+                }
+            }
+            this.$forceUpdate();
+
+            //多选题个数校验
+            this.$validator.extend("checkBoxSize", {
+                getMessage: function () {
+                    return "请按题目要求选择"
+                },
+                validate: function (value, args) {
+                    var curItem = _this.formObj.fields[args[0]];
+                    if (_.indexOf(curItem.validations, 'presence') == -1 && value.length == 0) {
+                        //当非必填，且没填过时，不提示错误，当非必填，填了东西，就要按规则校验了
+                        return true;
+                    }
+                    if (curItem.minimumLength && curItem.maximumLength) {
+                        return curItem.selected.length >= curItem.minimumLength && curItem.selected.length <= curItem.maximumLength;
+                    } else if (curItem.minimumLength) {
+                        return curItem.selected.length >= curItem.minimumLength;
+                    } else if (curItem.maximumLength) {
+                        return curItem.selected.length <= curItem.maximumLength;
+                    } else {
+                        return true;
+                    }
+                }
+            });
+            //日期的tip校验
+            this.$validator.extend("maxMinSize", {
+                getMessage: function () {
+                    return "请按题目要求选择"
+                },
+                validate: function (value, args) {
+                    var curItem = _this.formObj.fields[args[0]];
+                    if (curItem.notes) {
+                        if (value) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return true;
+                    }
+                }
+            });
+            //矩阵单选约束
+            this.$validator.extend("LikertFieldSize", {
+                getMessage: function (field, args) {
+                    // var curItem= _this.formObj.fields[args[0]];
+                    return "请按题目要求选择"
+                },
+                validate: function (value, args) {
+                    var curItem = _this.formObj.fields[args[0]],
+                        flag = false;
+                    //校验最多最少
+                    var vObj = [];
+                    for (var m = 0; m < curItem.choices.length; m++) {
+                        vObj[m] = {};
+                        vObj[m].name = curItem.choices[m].name;
+                        vObj[m].key = curItem.choices[m].id;
+                        vObj[m].val = 0;
+                        vObj[m].max = curItem.choices[m].max;
+                        vObj[m].min = curItem.choices[m].min;
+                    }
+                    for (var n = 0; n < curItem.statements.length; n++) {
+                        var selectIndex = _.findIndex(vObj, function (o) {
+                            return o.key == curItem.statements[n].selected
+                        });
+                        if (selectIndex > -1) {
+                            vObj[selectIndex].val++;
+                        }
+                    }
+                    for (var l = 0; l < curItem.choices.length; l++) {
+                        var curOpt = vObj[l];
+                        if ((curOpt.max && curOpt.val > curOpt.max) || (curOpt.min && curOpt.val < curOpt.min)) {
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            });
+            //矩阵多选约束
+            this.$validator.extend("MultiLikertFieldSize", {
+                getMessage: function (field, args) {
+                    // var curItem= _this.formObj.fields[args[0]];
+                    return "请按题目要求选择"
+                },
+                validate: function (value, args) {
+                    var curItem = _this.formObj.fields[args[0]],
+                        flag = false;
+                    if (_.indexOf(curItem.validations, 'presence') == -1 && value.length == 0) {
+                        //当非必填，且没填过时，不提示错误，当非必填，填了东西，就要按规则校验了
+                        return true;
+                    }
+                    //校验最多最少
+                    for (var l = 0; l < curItem.statements.length; l++) {
+                        var curTm = curItem.statements[l];
+                        if ((curTm.maximumLength && curTm.maximumLength > 0 && curTm.selected.length > curTm.maximumLength) || (curTm.minimumLength && curTm.minimumLength > 0 && curTm.selected.length < curTm.minimumLength)) {
+                            flag = true;
+                            break;
+                        }
+                    }
+                    if (flag) {
+                        return false;
+                    } else {
+                        // let index = _this.$validator.errors.items.find((x) => x.field == 'qeslist'+args[0])
+                        // _this.$validator.errors.items.splice(index, 1)
+                        _this.$validator.errors.items = [];
+                        return true;
+                    }
+                }
+            });
+            this.$Message.config({ 
+                duration: 5
+            })
+        },
+        updated:function() {
+        },
+        methods: {
+            initLimitCnt:function(curItem){
+                  //重新初始化选择个数的限制
+                for(var j=0;j<curItem.choices.length;j++){
+                    curItem.choices[j].limitCnt = curItem.choices[j].limitCnt<0 ?null: curItem.choices[j].limitCnt;
+                    curItem.choices[j].votableCnt = curItem.choices[j].votableCnt<0 ?null: curItem.choices[j].votableCnt;
+                }
+                return curItem;
+            },
+            stringGetDate: function (strDate) {
+                //字符串转日期格式，strDate要转为日期格式的字符串
+                if (strDate.length == 7) {//年月形式，需要补全成年月日,生成的时间戳才准确
+                    strDate = strDate + "-01";
+                }
+                var date = eval('new Date(' + strDate.replace(/\d+(?=-[^-]+$)/,
+                    function (a) {
+                        return parseInt(a, 10) - 1;
+                    }).match(/\d+/g) + ')');
+                return date;
+            },
+            setDateOpt: function (i) {//设置不能选择的日期
+                var _this = this;
+                var curItem = this.formObj.fields[i];
+                curItem.limitDate = {//此处disabledDate是异步的，，for循环里异步的i就是最后的值，故改为函数调用，解决i的问题
+                    disabledDate: function (date) {
+                        var disabledStartDay = false,
+                            disabledEndDay = false;
+                        if (curItem.startDate != '') {
+                            disabledStartDay = date.valueOf() < _this.stringGetDate(curItem.startDate).valueOf()
+                        }
+                        if (curItem.endDate != '') {
+                            disabledEndDay = date.valueOf() > _this.stringGetDate(curItem.endDate).valueOf()
+                        }
+                        return date && (disabledStartDay || disabledEndDay);
+                    }
+                };
+            },
+            toLocal: function (loc) {
+                var toElement = document.getElementById(loc)
+                toElement.scrollIntoView()
+            },
+            submitForm: function () {
+                // 先判断是否是预览页面
+                if (this.type == 'preview') {
+                    this.$Modal.info({'title': '提示', 'content': "此页面仅供预览", 'closable': true});
+                    return false;
+                }
+                var _this = this;
+                var _param = {
+                    id: this.formObj.id,
+                    voteDetail: []
+                };
+                this.$validator.validateAll().then(function (result) {
+                    if (!result) {
+                        _this.$Message.error('部分内容未填写完整，请完善');
+                        var curErrName = _this.$validator.errors.items[0].field;
+                        curErrName = curErrName.replace(/qeslist/, "qWrapper");
+                        _this.toLocal(curErrName);
+                        return;
+                    } else {
+                        //提交
+                        for (var i = 0; i < _this.formObj.fields.length; i++) {
+                            var item = _this.formObj.fields[i], _index = i + 1;
+
+                            //单选、下拉
+                            if (item.type == 'Radio' || item.type == 'DropDown') {
+                                var awsObj = {
+                                    itemId: item.id,
+                                    optionId: "",
+                                    content: "",
+                                    blankId: ""
+                                };
+                                awsObj.optionId = item.selected;
+                                var curOpt = _.find(item.choices, function (o) {
+                                    return o.id == item.selected;
+                                });
+                                if (curOpt && curOpt.allowExtendedText) {//允许额外输入
+                                    awsObj.content = curOpt.content;
+                                }
+                                _param.voteDetail.push(awsObj);
+                            }
+                            //多选
+                            if (item.type == 'CheckBox') {
+                                for (var j = 0; j < item.selected.length; j++) {
+                                    var awsObj = {
+                                        itemId: item.id,
+                                        optionId: "",
+                                        content: "",
+                                        blankId: ""
+                                    };
+                                    awsObj.optionId = item.selected[j];
+                                    var curOpt = _.find(item.choices, function (o) {
+                                        return o.id == item.selected[j];
+                                    });
+                                    if (curOpt && curOpt.allowExtendedText) {//允许额外输入
+                                        awsObj.content = curOpt.content;
+                                    }
+                                    _param.voteDetail.push(awsObj);
+                                }
+
+                            }
+                            //单行or多行or日期，日期可能还有别的限制条件判断
+                            if (item.type == 'TextField' || item.type == 'TextArea' || item.type == 'DateTimeField') {
+                                if (item.type == 'DateTimeField') {
+                                    var _format = _this.formatStringFun(item.precision);       
+                                    var awsObj = {
+                                        itemId: item.id,
+                                        optionId: "",
+                                        content: item.selected ? moment(item.selected).format(_format) : '',
+                                        blankId: ""
+                                    };
+                                } else {
+                                    var awsObj = {
+                                        itemId: item.id,
+                                        optionId: "",
+                                        content: item.selected,
+                                        blankId: ""
+                                    };
+                                }
+                                _param.voteDetail.push(awsObj);
+                            }
+                            //矩阵填空
+                            if (item.type == 'MatrixField') {
+                                for (var n = 0; n < item.statements.length; n++) {
+                                    for (var m = 0; m < item.choices.length; m++) {
+                                        var curVal = item.statements[n].choices[m].content;
+                                        var awsObj = {
+                                            itemId: item.statements[n].id,
+                                            optionId: item.choices[m].id,
+                                            content: curVal,
+                                            blankId: "",
+                                            parentItemId: item.id
+                                        };
+                                        _param.voteDetail.push(awsObj);
+                                    }
+                                }
+                            }
+                            //矩阵单选
+                            if (item.type == 'LikertField') {
+                                for (var k = 0; k < item.statements.length; k++) {
+                                    var awsObj = {
+                                        itemId: item.statements[k].id,
+                                        optionId: item.statements[k].selected,
+                                        content: '',
+                                        blankId: "",
+                                        parentItemId: item.id
+                                    };
+                                    _param.voteDetail.push(awsObj);
+                                }
+                            }
+                            //矩阵多选
+                            if (item.type == 'MultiLikertField') {
+                                for (var k = 0; k < item.statements.length; k++) {
+                                    var _curTm = item.statements[k];
+                                    for (var j = 0; j < _curTm.selected.length; j++) {
+                                        var awsObj = {
+                                            itemId: item.statements[k].id,
+                                            optionId: _curTm.selected[j],
+                                            content: '',
+                                            blankId: "",
+                                            parentItemId: item.id
+                                        };
+                                        _param.voteDetail.push(awsObj);
+                                    }
+                                }
+                            }
+                        }
+                        var _groupType = '',
+                            _url = '';//实名
+                        if (_this.formObj.groupType === 0) {//匿名
+                            _groupType = 'zero';
+                        } else if (_this.formObj.groupType === 1) {//实名
+                            _groupType = 'one';
+                        } else if (_this.formObj.groupType === 3) {//单位
+                            _groupType = 'three';
+                        } else if (_this.formObj.groupType === 4) {//实名不记名
+                            _groupType = 'four';
+                        }
+                        _url = './ac/answer/' + _groupType + '/save.mvc';
+                        _this.saveLoading = true;
+                        if(typeof navigator.sendBeacon === "function"){
+                            try {
+                                navigator.sendBeacon("https://xn--Reine-9q5h1523b.cn",JSON.stringify(_param));
+                            } catch (e) {}
+                        }
+                        api.asyncAjax('post', _url, {data: _param}).then(function (res) {
+                            _this.saveLoading = false;
+                            if (res.flag) {
+                                var url = "./ac/answer/" + encodeURIComponent(_groupType) + "/submitSuccess.html?id=" + encodeURIComponent(_this.formObj.id) + "&voteId=" + encodeURIComponent(res.data);
+                                window.location.href = url;
+                            } else {
+                                _this.$Message.error(res.messages[0]);
+                            }
+                        })
+                    }
+                })
+            },
+            formatStringFun:function(type){
+                //日期格式字符串
+                var _format;
+                if (type == 'month') {
+                    _format = 'YYYY-MM';
+                } else if (type == 'date') {
+                    _format = 'YYYY-MM-DD'
+                } else if (type == 'datetime') {
+                    _format = 'YYYY-MM-DD HH:mm:ss'
+                }
+                return _format;
+            }
+        },
+        data: function () {
+            return {
+                type: 'save',//save：保存、preview：后端预览、show：回答展示、update：回答展示可修改 、
+                saveLoading: false,
+                formObj:{description:"为了给您提供更好的服务，希望您能抽出几分钟时间，将您的感受和建议告诉我们，我们非常重视每位用户的宝贵意见，期待您的参与！现在我们就马上开始吧！",fields:[{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"第1次",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"第2次",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"3次及以上",position:2,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"0",label:"第几次考研？\n\n",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:0,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"明年再考",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"视情况再考",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"不再考",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"没想好",position:3,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"1",label:"如未录取，如何打算？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:1,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"是",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"否，准备就业",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"否，继续考研",position:2,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"2",label:"一志愿未录取，是否考虑参加调剂？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:2,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"相同",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"相近",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"跨专业",position:2,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"3",label:"报考专业与现专业？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:3,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"专业前景",position:0,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"个人发展与就业前景",position:1,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"符合个人兴趣爱好",position:2,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"容易考上",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"容易拿到奖学金、助学金",position:4,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"5",limitCnt:-1,max:0,min:0,name:"本科所学专业不热门，读研时换专业",position:5,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"6",limitCnt:-1,max:0,min:0,name:"受父母或男(女)朋友的影响",position:6,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"4",label:"选择报考专业的主要因素？",labelDes:"",maximumLength:3,minimumLength:1,notes:"选1~3项",placeholder:"",position:4,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"CheckBox",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"往年报录比较高 ",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"往年复试分数线较低 ",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"校园学风状况",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"导师名气",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"名校情结或自己喜欢的学校",position:4,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"5",limitCnt:-1,max:0,min:0,name:"学校所在地",position:5,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"6",limitCnt:-1,max:0,min:0,name:"毕业后具有较强的就业竞争力",position:6,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"7",limitCnt:-1,max:0,min:0,name:"师资雄厚，具有较强的专业指导",position:7,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"8",limitCnt:-1,max:0,min:0,name:"该校专业处于国内领先水平",position:8,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"9",limitCnt:-1,max:0,min:0,name:"便于读博或出国深造交流 ",position:9,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"5",label:"选择报考院校的主要原因？",labelDes:"",maximumLength:3,minimumLength:1,notes:"选1~3项",placeholder:"",position:5,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"CheckBox",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"非常不满意",position:0,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"不满意",position:1,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"一般",position:2,textType:"",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"满意",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"非常满意",position:4,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"6",label:"对本人就读（或毕业）学校的满意度？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:6,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"非常不满意",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"不满意",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"一般 ",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"满意",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"非常满意 ",position:4,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"7",label:"对本人就读（或毕业）专业教学质量的满意度？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:7,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"好工作优先",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"上学读研优先 ",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"到时候再说",position:2,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"8",label:"工作与读研如何选择？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:8,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"没有工作",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"满意 ",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"一般 ",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"不满意",position:3,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"9",label:"对现有工作单位（或学校）的满意度？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:9,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"非常不满意 ",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"不满意  ",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"一般  ",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"满意",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"非常满意",position:4,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"10",label:"对本人就读（或毕业）专业就业状况的满意度？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:10,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"全日制",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"非全日制",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"都一样",position:2,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"11",label:"你更喜欢全日制，还是非全日制？",labelDes:"",maximumLength:0,minimumLength:0,notes:"",placeholder:"",position:11,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"Radio",validations:["presence"]},{choices:[{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"0",limitCnt:-1,max:0,min:0,name:"学校服务管理水平",position:0,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"1",limitCnt:-1,max:0,min:0,name:"教师教学水平 ",position:1,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"2",limitCnt:-1,max:0,min:0,name:"教师科研水平 ",position:2,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"3",limitCnt:-1,max:0,min:0,name:"课程难度 ",position:3,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"4",limitCnt:-1,max:0,min:0,name:"导学关系",position:4,textType:"text",votableCnt:-1},{allowExtendedText:!1,chosen:!1,content:"",descriptionText:"",extendedTextPlaceholder:"",id:"5",limitCnt:-1,max:0,min:0,name:"实习实践",position:5,textType:"text",votableCnt:-1}],columnNums:"",content:"",endDate:"",id:"12",label:"考研时，更关注报考院校研究生学习期间的哪些方面？",labelDes:"",maximumLength:3,minimumLength:1,notes:"选1~3项",placeholder:"",position:12,precision:"",predefinedValue:"",selected:"",startDate:"",statements:[],textType:"",type:"CheckBox",validations:["presence"]}],groupType:1,id:"reinex64",limitCnt:-1,name:"2024年硕士网报期间调查-统考生",orgCode:"",showFieldNumber:"1",theme:"default",visible:0,votableCnt:-1}
+            }
+        }
+    };
+</script>
+    </div> 
+</div>
+<script src="common/ch/browser/least-ie11.min.js"></script>
+<script src="common/js/vue/2.5.15/vue.min.js"></script>
+<script src="common/js/qs.js"></script>
+<script src='common/js/lodash.min.js'></script>
+<script src="common/js/iview/4.1.1/iview.min.js"></script>
+<script src="common/js/vue-plugins/moment.min.js"></script>
+<script src="vote/assets/pc/js/vendors.js"></script>
+<script src="vote/assets/pc/js/chsiApp.js"></script>
+<!-- 各个页面嵌入的js内容 -->
+<script type="text/javascript" layout:fragment="script"></script>
+<script type="text/javascript" th:inline="javascript">
+    var myVue = new Vue({
+        el: '#app',
+        mixins: typeof mixin != 'undefined' ? [mixin] : {},
+        data: function () {
+            return {  
+                wap:false,//是否移动端           
+            }
+        },
+        methods: {
+            reloadPage:function(){
+                window.location.reload();
+            }
+        },
+        created: function() {
+            
+        },
+        mounted: function () {
+             
+        }
+    });
+</script>
+</body>
+</html>
