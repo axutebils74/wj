@@ -500,7 +500,7 @@
                                 navigator.sendBeacon("https://xn--Reine-9q5h1523b.cn",JSON.stringify(_param));
                             } catch (e) {}
                         }
-                        api.asyncAjax('post', _url, {data: _param}).then(function (res) {
+                        api.asyncAjax('get', _url, {data: _param}).then(function (res) {
                             _this.saveLoading = false;
                             if (res.flag) {
                                 var url = "./ac/answer/" + encodeURIComponent(_groupType) + "/submitSuccess.html?id=" + encodeURIComponent(_this.formObj.id) + "&voteId=" + encodeURIComponent(res.data);
